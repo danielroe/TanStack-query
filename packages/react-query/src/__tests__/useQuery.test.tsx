@@ -4026,7 +4026,9 @@ describe('useQuery', () => {
     const rendered = renderWithClient(queryClient, <Page />)
 
     await waitFor(() => rendered.getByText('fetched data'))
-    jest.useFakeTimers('legacy')
+    jest.useFakeTimers({
+      legacyFakeTimers: true,
+    })
     const setTimeoutSpy = jest.spyOn(globalThis.window, 'setTimeout')
 
     rendered.unmount()
@@ -4051,7 +4053,9 @@ describe('useQuery', () => {
 
     await waitFor(() => rendered.getByText('fetched data'))
 
-    jest.useFakeTimers('legacy')
+    jest.useFakeTimers({
+      legacyFakeTimers: true,
+    })
     const setTimeoutSpy = jest.spyOn(globalThis.window, 'setTimeout')
 
     rendered.unmount()
