@@ -118,6 +118,10 @@ export interface QueryOptions<
    * Use this property to pass information that can be used in other places.
    */
   meta?: QueryMeta
+  /**
+   * Maximum number of pages to store in the data of an infinite query.
+   */
+  maxPages?: number
 }
 
 export type ThrowErrors<
@@ -334,31 +338,15 @@ export interface ResultOptions {
   throwOnError?: boolean
 }
 
-export interface RefetchPageFilters<TPageData = unknown> {
-  refetchPage?: (
-    lastPage: TPageData,
-    index: number,
-    allPages: TPageData[],
-  ) => boolean
-}
-
 export interface RefetchOptions extends ResultOptions {
   cancelRefetch?: boolean
 }
 
-export interface InvalidateQueryFilters<TPageData = unknown>
-  extends QueryFilters,
-    RefetchPageFilters<TPageData> {
+export interface InvalidateQueryFilters extends QueryFilters {
   refetchType?: QueryTypeFilter | 'none'
 }
 
-export interface RefetchQueryFilters<TPageData = unknown>
-  extends QueryFilters,
-    RefetchPageFilters<TPageData> {}
-
-export interface ResetQueryFilters<TPageData = unknown>
-  extends QueryFilters,
-    RefetchPageFilters<TPageData> {}
+export interface RefetchQueryFilters extends QueryFilters {}
 
 export interface InvalidateOptions extends RefetchOptions {}
 export interface ResetOptions extends RefetchOptions {}
@@ -373,7 +361,7 @@ export interface FetchPreviousPageOptions extends ResultOptions {
   pageParam?: unknown
 }
 
-export type QueryStatus = 'loading' | 'error' | 'success'
+export type QueryStatus = 'pending' | 'error' | 'success'
 export type FetchStatus = 'fetching' | 'paused' | 'idle'
 
 export interface QueryObserverBaseResult<
@@ -392,7 +380,12 @@ export interface QueryObserverBaseResult<
   isFetchedAfterMount: boolean
   isFetching: boolean
   isLoading: boolean
+  isPending: boolean
   isLoadingError: boolean
+  /**
+   * @deprecated isInitialLoading is being deprecated in favor of isLoading
+   * and will be removed in the next major version.
+   */
   isInitialLoading: boolean
   isPaused: boolean
   isPlaceholderData: boolean
@@ -400,8 +393,8 @@ export interface QueryObserverBaseResult<
   isRefetching: boolean
   isStale: boolean
   isSuccess: boolean
-  refetch: <TPageData>(
-    options?: RefetchOptions & RefetchQueryFilters<TPageData>,
+  refetch: (
+    options?: RefetchOptions,
   ) => Promise<QueryObserverResult<TData, TError>>
   status: QueryStatus
   fetchStatus: FetchStatus
@@ -414,11 +407,11 @@ export interface QueryObserverLoadingResult<
   data: undefined
   error: null
   isError: false
-  isLoading: true
+  isPending: true
   isLoadingError: false
   isRefetchError: false
   isSuccess: false
-  status: 'loading'
+  status: 'pending'
 }
 
 export interface QueryObserverLoadingErrorResult<
@@ -428,7 +421,7 @@ export interface QueryObserverLoadingErrorResult<
   data: undefined
   error: TError
   isError: true
-  isLoading: false
+  isPending: false
   isLoadingError: true
   isRefetchError: false
   isSuccess: false
@@ -442,7 +435,7 @@ export interface QueryObserverRefetchErrorResult<
   data: TData
   error: TError
   isError: true
-  isLoading: false
+  isPending: false
   isLoadingError: false
   isRefetchError: true
   isSuccess: false
@@ -456,7 +449,7 @@ export interface QueryObserverSuccessResult<
   data: TData
   error: null
   isError: false
-  isLoading: false
+  isPending: false
   isLoadingError: false
   isRefetchError: false
   isSuccess: true
@@ -498,11 +491,11 @@ export interface InfiniteQueryObserverLoadingResult<
   data: undefined
   error: null
   isError: false
-  isLoading: true
+  isPending: true
   isLoadingError: false
   isRefetchError: false
   isSuccess: false
-  status: 'loading'
+  status: 'pending'
 }
 
 export interface InfiniteQueryObserverLoadingErrorResult<
@@ -512,7 +505,7 @@ export interface InfiniteQueryObserverLoadingErrorResult<
   data: undefined
   error: TError
   isError: true
-  isLoading: false
+  isPending: false
   isLoadingError: true
   isRefetchError: false
   isSuccess: false
@@ -526,7 +519,7 @@ export interface InfiniteQueryObserverRefetchErrorResult<
   data: InfiniteData<TData>
   error: TError
   isError: true
-  isLoading: false
+  isPending: false
   isLoadingError: false
   isRefetchError: true
   isSuccess: false
@@ -540,7 +533,7 @@ export interface InfiniteQueryObserverSuccessResult<
   data: InfiniteData<TData>
   error: null
   isError: false
-  isLoading: false
+  isPending: false
   isLoadingError: false
   isRefetchError: false
   isSuccess: true
@@ -558,7 +551,7 @@ export type InfiniteQueryObserverResult<
 
 export type MutationKey = readonly unknown[]
 
-export type MutationStatus = 'idle' | 'loading' | 'success' | 'error'
+export type MutationStatus = 'idle' | 'pending' | 'success' | 'error'
 
 export interface MutationMeta {
   [index: string]: unknown
@@ -651,7 +644,7 @@ export interface MutationObserverBaseResult<
 > extends MutationState<TData, TError, TVariables, TContext> {
   isError: boolean
   isIdle: boolean
-  isLoading: boolean
+  isPending: boolean
   isSuccess: boolean
   mutate: MutateFunction<TData, TError, TVariables, TContext>
   reset: () => void
@@ -667,7 +660,7 @@ export interface MutationObserverIdleResult<
   error: null
   isError: false
   isIdle: true
-  isLoading: false
+  isPending: false
   isSuccess: false
   status: 'idle'
 }
@@ -682,9 +675,9 @@ export interface MutationObserverLoadingResult<
   error: null
   isError: false
   isIdle: false
-  isLoading: true
+  isPending: true
   isSuccess: false
-  status: 'loading'
+  status: 'pending'
 }
 
 export interface MutationObserverErrorResult<
@@ -697,7 +690,7 @@ export interface MutationObserverErrorResult<
   error: TError
   isError: true
   isIdle: false
-  isLoading: false
+  isPending: false
   isSuccess: false
   status: 'error'
 }
@@ -712,7 +705,7 @@ export interface MutationObserverSuccessResult<
   error: null
   isError: false
   isIdle: false
-  isLoading: false
+  isPending: false
   isSuccess: true
   status: 'success'
 }
@@ -746,4 +739,17 @@ export interface CancelOptions {
 
 export interface SetDataOptions {
   updatedAt?: number
+}
+
+export type NotifyEventType =
+  | 'added'
+  | 'removed'
+  | 'updated'
+  | 'observerAdded'
+  | 'observerRemoved'
+  | 'observerResultsUpdated'
+  | 'observerOptionsUpdated'
+
+export interface NotifyEvent {
+  type: NotifyEventType
 }
